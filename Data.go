@@ -4,25 +4,13 @@ import (
 	errortools "github.com/leapforce-libraries/go_errortools"
 )
 
+type Data struct {
+}
+
 type RowCounts struct {
 	RowCounts []struct {
 		RowCount int `json:"RowCount"`
 	} `json:"RowCounts"`
-}
-
-type Contact struct {
-	ATInternetID         int32  `json:"ATInternetId"`
-	InsightlyID          int32  `json:"InsightlyId"`
-	Email                string `json:"Email"`
-	Cellphone            string `json:"Cellphone"`
-	Phone                string `json:"Phone"`
-	Manual               bool   `json:"Manual"`
-	MainContact          bool   `json:"MainContact"`
-	MainContactCreditor  bool   `json:"MainContactCreditor"`
-	MainContactDebtor    bool   `json:"MainContactDebtor"`
-	FunctionName         string `json:"FunctionName"`
-	EmploymentTerminated bool   `json:"EmploymentTerminated"`
-	OrganizationID       int32  `json:"OrganizationId"`
 }
 
 type FilterSet struct {
@@ -59,33 +47,45 @@ type Options struct {
 }
 
 type GetDataParams struct {
-	Columns    []string          `json:"columns"`
-	Sort       *[]string         `json:"sort,omitempty"`
-	Filter     *FilterSet        `json:"filter,omitempty"`
-	Space      Space             `json:"space"`
-	Period     map[string]Period `json:"period"`
-	MaxResults *int              `json:"max-results"`
-	PageNum    *int              `json:"page-num"`
-	Options    *Options          `json:"options,omitempty"`
+	Properties Properties
+	Metrics    Metrics
+	columns    []string            `json:"columns"`
+	Sort       *[]string           `json:"sort,omitempty"`
+	Filter     *FilterSet          `json:"filter,omitempty"`
+	Space      Space               `json:"space"`
+	Period     map[string][]Period `json:"period"`
+	MaxResults *int                `json:"max-results"`
+	PageNum    *int                `json:"page-num"`
+	Options    *Options            `json:"options,omitempty"`
 }
 
-func (ai *ATInternet) GetData(params *GetDataParams) (*Contact, *errortools.Error) {
+func (ai *ATInternet) GetData(params *GetDataParams) (*Data, *errortools.Error) {
+	if params == nil {
+		return nil, nil
+	}
 
-	contact := Contact{}
-	_, _, e := ai.Post("getData", params, &contact)
+	data := Data{}
+	_, _, e := ai.Post("getData", params, &data)
 
-	return &contact, e
+	return &data, e
 }
 
 type GetRowCountParams struct {
-	Columns []string          `json:"columns"`
-	Filter  *FilterSet        `json:"filter,omitempty"`
-	Space   Space             `json:"space"`
-	Period  map[string]Period `json:"period"`
-	Options *Options          `json:"options,omitempty"`
+	Properties Properties
+	Metrics    Metrics
+	columns    []string            `json:"columns"`
+	Filter     *FilterSet          `json:"filter,omitempty"`
+	Space      Space               `json:"space"`
+	Period     map[string][]Period `json:"period"`
+	Options    *Options            `json:"options,omitempty"`
 }
 
 func (ai *ATInternet) GetRowCount(params *GetRowCountParams) (*RowCounts, *errortools.Error) {
+	if params == nil {
+		return nil, nil
+	}
+
+	(*params).columns = append((*params).columns, params.Properties.String()...)
 
 	rowCounts := RowCounts{}
 	_, _, e := ai.Post("getRowCount", params, &rowCounts)
@@ -96,6 +96,9 @@ func (ai *ATInternet) GetRowCount(params *GetRowCountParams) (*RowCounts, *error
 type GetTotalParams GetRowCountParams
 
 func (ai *ATInternet) GetTotal(params *GetTotalParams) (*RowCounts, *errortools.Error) {
+	if params == nil {
+		return nil, nil
+	}
 
 	rowCounts := RowCounts{}
 	_, _, e := ai.Post("getTotal", params, &rowCounts)
