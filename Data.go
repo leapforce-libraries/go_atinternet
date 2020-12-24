@@ -4,6 +4,12 @@ import (
 	errortools "github.com/leapforce-libraries/go_errortools"
 )
 
+type RowCounts struct {
+	RowCounts []struct {
+		RowCount int `json:"RowCount"`
+	} `json:"RowCounts"`
+}
+
 type Contact struct {
 	ATInternetID         int32  `json:"ATInternetId"`
 	InsightlyID          int32  `json:"InsightlyId"`
@@ -17,17 +23,6 @@ type Contact struct {
 	FunctionName         string `json:"FunctionName"`
 	EmploymentTerminated bool   `json:"EmploymentTerminated"`
 	OrganizationID       int32  `json:"OrganizationId"`
-}
-
-type DataPostParams struct {
-	Columns    []string          `json:"columns"`
-	Sort       *[]string         `json:"sort,omitempty"`
-	Filter     *FilterSet        `json:"filter,omitempty"`
-	Space      Space             `json:"space"`
-	Period     map[string]Period `json:"period"`
-	MaxResults *int              `json:"max-results"`
-	PageNum    *int              `json:"page-num"`
-	Options    *Options          `json:"options,omitempty"`
 }
 
 type FilterSet struct {
@@ -63,10 +58,47 @@ type Options struct {
 	IgnoreNullProperties bool `json:"ignore_null_properties"`
 }
 
-func (ai *ATInternet) DataPost(params *DataPostParams) (*Contact, *errortools.Error) {
+type GetDataParams struct {
+	Columns    []string          `json:"columns"`
+	Sort       *[]string         `json:"sort,omitempty"`
+	Filter     *FilterSet        `json:"filter,omitempty"`
+	Space      Space             `json:"space"`
+	Period     map[string]Period `json:"period"`
+	MaxResults *int              `json:"max-results"`
+	PageNum    *int              `json:"page-num"`
+	Options    *Options          `json:"options,omitempty"`
+}
+
+func (ai *ATInternet) GetData(params *GetDataParams) (*Contact, *errortools.Error) {
 
 	contact := Contact{}
 	_, _, e := ai.Post("getData", params, &contact)
 
 	return &contact, e
+}
+
+type GetRowCountParams struct {
+	Columns []string          `json:"columns"`
+	Filter  *FilterSet        `json:"filter,omitempty"`
+	Space   Space             `json:"space"`
+	Period  map[string]Period `json:"period"`
+	Options *Options          `json:"options,omitempty"`
+}
+
+func (ai *ATInternet) GetRowCount(params *GetRowCountParams) (*RowCounts, *errortools.Error) {
+
+	rowCounts := RowCounts{}
+	_, _, e := ai.Post("getRowCount", params, &rowCounts)
+
+	return &rowCounts, e
+}
+
+type GetTotalParams GetRowCountParams
+
+func (ai *ATInternet) GetTotal(params *GetTotalParams) (*RowCounts, *errortools.Error) {
+
+	rowCounts := RowCounts{}
+	_, _, e := ai.Post("getTotal", params, &rowCounts)
+
+	return &rowCounts, e
 }
