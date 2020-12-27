@@ -81,21 +81,19 @@ func (ai *ATInternet) httpRequest(httpMethod string, urlPath string, bodyModel i
 	url := fmt.Sprintf("%s/%s", APIURL, urlPath)
 	fmt.Println(url)
 
-	e := new(errortools.Error)
-
 	buffer := new(bytes.Buffer)
 	buffer = nil
 
 	if bodyModel != nil {
-
 		b, err := json.Marshal(bodyModel)
 		if err != nil {
-			e.SetMessage(err)
-			return nil, nil, e
+			return nil, nil, errortools.ErrorMessage(err)
 		}
-		fmt.Println(string(b)) //temp
+		//fmt.Println(string(b)) //temp
 		buffer = bytes.NewBuffer(b)
 	}
+
+	ee := new(errortools.Error)
 
 	request, err := func() (*http.Request, error) {
 		// function necessary because a Buffer nil pointer differs from a nil value
@@ -105,11 +103,11 @@ func (ai *ATInternet) httpRequest(httpMethod string, urlPath string, bodyModel i
 		return http.NewRequest(httpMethod, url, buffer)
 	}()
 
-	e.SetRequest(request)
+	ee.SetRequest(request)
 
 	if err != nil {
-		e.SetMessage(err)
-		return request, nil, e
+		ee.SetMessage(err)
+		return request, nil, ee
 	}
 
 	// Add authorization token to header
@@ -122,6 +120,7 @@ func (ai *ATInternet) httpRequest(httpMethod string, urlPath string, bodyModel i
 
 	// Send out the HTTP request
 	response, e := utilities.DoWithRetry(client, request, ai.maxRetries, ai.secondsBetweenRetries)
+	ee.SetResponse(response)
 
 	if response != nil {
 		// Check HTTP StatusCode
@@ -130,13 +129,7 @@ func (ai *ATInternet) httpRequest(httpMethod string, urlPath string, bodyModel i
 			fmt.Println("url", url)
 			fmt.Println("StatusCode", response.StatusCode)
 
-			if e == nil {
-				e = new(errortools.Error)
-				e.SetRequest(request)
-				e.SetResponse(response)
-			}
-
-			e.SetMessage(fmt.Sprintf("Server returned statuscode %v", response.StatusCode))
+			ee.SetMessage(fmt.Sprintf("Server returned statuscode %v", response.StatusCode))
 		}
 
 		if response.Body != nil {
@@ -145,8 +138,8 @@ func (ai *ATInternet) httpRequest(httpMethod string, urlPath string, bodyModel i
 
 			b, err := ioutil.ReadAll(response.Body)
 			if err != nil {
-				e.SetMessage(err)
-				return request, response, e
+				ee.SetMessage(err)
+				return request, response, ee
 			}
 
 			if e != nil {
@@ -156,7 +149,7 @@ func (ai *ATInternet) httpRequest(httpMethod string, urlPath string, bodyModel i
 
 				if errError == nil {
 					if errorResponse.ErrorMessage != "" {
-						e.SetMessage(errorResponse.ErrorMessage)
+						ee.SetMessage(errorResponse.ErrorMessage)
 					}
 				} else {
 					// try to unmarshal to string
@@ -164,24 +157,28 @@ func (ai *ATInternet) httpRequest(httpMethod string, urlPath string, bodyModel i
 					errError = json.Unmarshal(b, &errorString)
 
 					if errorString != "" {
-						e.SetMessage(errorString)
+						ee.SetMessage(errorString)
 					}
 				}
 
 				errortools.CaptureInfo(errError)
 
-				return request, response, e
+				return request, response, ee
 			}
 
 			if responseModel != nil {
 				err = json.Unmarshal(b, &responseModel)
 				if err != nil {
-					e.SetMessage(err)
-					return request, response, e
+					ee.SetMessage(err)
+					return request, response, ee
 				}
 			}
 		}
 	}
 
-	return request, response, e
+	if e != nil {
+		return request, response, e
+	}
+
+	return request, response, nil
 }
