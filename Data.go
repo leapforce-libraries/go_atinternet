@@ -3,6 +3,7 @@ package atinternet
 import (
 	"fmt"
 
+	"cloud.google.com/go/civil"
 	errortools "github.com/leapforce-libraries/go_errortools"
 )
 
@@ -13,7 +14,7 @@ type params struct {
 	Sort       *[]string           `json:"sort,omitempty"`
 	Filter     *FilterSet          `json:"filter,omitempty"`
 	Space      Space               `json:"space"`
-	Period     map[string][]Period `json:"period"`
+	Period     map[string][]period `json:"period"`
 	MaxResults *int                `json:"max-results,omitempty"`
 	PageNum    *int                `json:"page-num,omitempty"`
 	Options    *Options            `json:"options,omitempty"`
@@ -42,7 +43,7 @@ type Space struct {
 	S []int `json:"s"`
 }
 
-type Period struct {
+type period struct {
 	Type  string `json:"type"`
 	Start string `json:"start"`
 	End   string `json:"end"`
@@ -81,6 +82,22 @@ func (sort *Sort) AddProperty(property Property, sortOrder SortOrder) {
 	sort.sort = append(sort.sort, s)
 }
 
+type Period struct {
+	periods map[string][]period
+}
+
+func (p *Period) AddDay(date civil.Date) {
+	if p.periods == nil {
+		p.periods = make(map[string][]period)
+	}
+
+	p.periods[fmt.Sprintf("p%v", len(p.periods)+1)] = []period{period{
+		Type:  "D",
+		Start: date.String(),
+		End:   date.String(),
+	}}
+}
+
 // GetData
 //
 type GetDataParams struct {
@@ -89,7 +106,7 @@ type GetDataParams struct {
 	Sort       *Sort
 	Filter     *FilterSet
 	Space      []int
-	Period     []Period
+	Period     Period
 	MaxResults *int
 	PageNum    *int
 	Options    *Options
@@ -107,17 +124,13 @@ func (p *GetDataParams) Params() *params {
 	pa.Filter = p.Filter
 	pa.Space = Space{p.Space}
 	pa.Options = p.Options
-	pa.Period = make(map[string][]Period)
+	pa.Period = p.Period.periods
 	pa.MaxResults = p.MaxResults
 	pa.PageNum = p.PageNum
 	pa.Options = p.Options
 
 	if p.Sort != nil {
 		pa.Sort = &((*p.Sort).sort)
-	}
-
-	for i, period := range p.Period {
-		pa.Period[fmt.Sprintf("p%v", i+1)] = []Period{period}
 	}
 
 	return &pa
@@ -167,7 +180,7 @@ type GetRowCountParams struct {
 	Metrics    Metrics
 	Filter     *FilterSet
 	Space      []int
-	Period     []Period
+	Period     Period
 	Options    *Options
 }
 
@@ -183,11 +196,7 @@ func (p *GetRowCountParams) Params() *params {
 	pa.Filter = p.Filter
 	pa.Space = Space{p.Space}
 	pa.Options = p.Options
-	pa.Period = make(map[string][]Period)
-
-	for i, period := range p.Period {
-		pa.Period[fmt.Sprintf("p%v", i+1)] = []Period{period}
-	}
+	pa.Period = p.Period.periods
 
 	return &pa
 }

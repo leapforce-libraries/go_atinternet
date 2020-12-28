@@ -79,7 +79,7 @@ func (ai *ATInternet) httpRequest(httpMethod string, urlPath string, bodyModel i
 	client := new(http.Client)
 
 	url := fmt.Sprintf("%s/%s", APIURL, urlPath)
-	fmt.Println(url)
+	//fmt.Println(url)
 
 	buffer := new(bytes.Buffer)
 	buffer = nil
