@@ -162,13 +162,13 @@ type Context struct {
 	} `json:"Periods"`
 }
 
-func (ai *ATInternet) GetData(params *GetDataParams) (*DataFeed, *errortools.Error) {
+func (service *Service) GetData(params *GetDataParams) (*DataFeed, *errortools.Error) {
 	if params == nil {
 		return nil, nil
 	}
 
 	data := Data{}
-	_, _, e := ai.Post("getData", params.Params(), &data)
+	_, _, e := service.Post("getData", params.Params(), &data)
 
 	return &data.DataFeed, e
 }
@@ -207,13 +207,13 @@ type RowCounts struct {
 	} `json:"RowCounts"`
 }
 
-func (ai *ATInternet) GetRowCount(params *GetRowCountParams) (*RowCounts, *errortools.Error) {
+func (service *Service) GetRowCount(params *GetRowCountParams) (*RowCounts, *errortools.Error) {
 	if params == nil {
 		return nil, nil
 	}
 
 	rowCounts := RowCounts{}
-	_, _, e := ai.Post("getRowCount", params.Params(), &rowCounts)
+	_, _, e := service.Post("getRowCount", params.Params(), &rowCounts)
 
 	return &rowCounts, e
 }
@@ -231,13 +231,13 @@ func (p *GetTotalParams) Params() *params {
 	return p1.Params()
 }
 
-func (ai *ATInternet) GetTotal(params *GetTotalParams) (*RowCounts, *errortools.Error) {
+func (service *Service) GetTotal(params *GetTotalParams) (*RowCounts, *errortools.Error) {
 	if params == nil {
 		return nil, nil
 	}
 
 	rowCounts := RowCounts{}
-	_, _, e := ai.Post("getTotal", params.Params(), &rowCounts)
+	_, _, e := service.Post("getTotal", params.Params(), &rowCounts)
 
 	return &rowCounts, e
 }

@@ -17,65 +17,65 @@ const (
 
 // type
 //
-type ATInternet struct {
+type Service struct {
 	accessKey             string
 	secretKey             string
 	maxRetries            uint
 	secondsBetweenRetries uint32
 }
 
-type ATInternetConfig struct {
+type ServiceConfig struct {
 	AccessKey             string
 	SecretKey             string
 	MaxRetries            *uint
 	SecondsBetweenRetries *uint32
 }
 
-func NewATInternet(config ATInternetConfig) (*ATInternet, *errortools.Error) {
-	atInternet := new(ATInternet)
+func NewService(config ServiceConfig) (*Service, *errortools.Error) {
+	service := new(Service)
 
 	if config.AccessKey == "" {
-		return nil, errortools.ErrorMessage("ATInternet AccessKey not provided")
+		return nil, errortools.ErrorMessage("AccessKey not provided")
 	}
-	atInternet.accessKey = config.AccessKey
+	service.accessKey = config.AccessKey
 
 	if config.SecretKey == "" {
-		return nil, errortools.ErrorMessage("ATInternet SecretKey not provided")
+		return nil, errortools.ErrorMessage("SecretKey not provided")
 	}
-	atInternet.secretKey = config.SecretKey
+	service.secretKey = config.SecretKey
 
 	if config.MaxRetries != nil {
-		atInternet.maxRetries = *config.MaxRetries
+		service.maxRetries = *config.MaxRetries
 	} else {
-		atInternet.maxRetries = 0
+		service.maxRetries = 0
 	}
 
 	if config.SecondsBetweenRetries != nil {
-		atInternet.secondsBetweenRetries = *config.SecondsBetweenRetries
+		service.secondsBetweenRetries = *config.SecondsBetweenRetries
 	} else {
-		atInternet.secondsBetweenRetries = 3
+		service.secondsBetweenRetries = 3
 	}
 
-	return atInternet, nil
+	return service, nil
 }
 
-func (ai *ATInternet) apiKey() string {
-	return fmt.Sprintf("%s_%s", ai.accessKey, ai.secretKey)
+func (service *Service) apiKey() string {
+	return fmt.Sprintf("%s_%s", service.accessKey, service.secretKey)
 }
 
 // generic Get method
 //
-func (ai *ATInternet) Get(urlPath string, responseModel interface{}) (*http.Request, *http.Response, *errortools.Error) {
-	return ai.httpRequest(http.MethodGet, urlPath, nil, responseModel)
+func (service *Service) Get(urlPath string, responseModel interface{}) (*http.Request, *http.Response, *errortools.Error) {
+	return service.httpRequest(http.MethodGet, urlPath, nil, responseModel)
 }
 
 // generic Post method
 //
-func (ai *ATInternet) Post(urlPath string, bodyModel interface{}, responseModel interface{}) (*http.Request, *http.Response, *errortools.Error) {
-	return ai.httpRequest(http.MethodPost, urlPath, bodyModel, responseModel)
+func (service *Service) Post(urlPath string, bodyModel interface{}, responseModel interface{}) (*http.Request, *http.Response, *errortools.Error) {
+	return service.httpRequest(http.MethodPost, urlPath, bodyModel, responseModel)
 }
 
-func (ai *ATInternet) httpRequest(httpMethod string, urlPath string, bodyModel interface{}, responseModel interface{}) (*http.Request, *http.Response, *errortools.Error) {
+func (service *Service) httpRequest(httpMethod string, urlPath string, bodyModel interface{}, responseModel interface{}) (*http.Request, *http.Response, *errortools.Error) {
 	client := new(http.Client)
 
 	url := fmt.Sprintf("%s/%s", APIURL, urlPath)
@@ -112,14 +112,14 @@ func (ai *ATInternet) httpRequest(httpMethod string, urlPath string, bodyModel i
 
 	// Add authorization token to header
 	request.Header.Set("Accept", "application/json")
-	request.Header.Set("x-api-key", ai.apiKey())
+	request.Header.Set("x-api-key", service.apiKey())
 
 	if bodyModel != nil {
 		request.Header.Set("Content-Type", "application/json")
 	}
 
 	// Send out the HTTP request
-	response, e := utilities.DoWithRetry(client, request, ai.maxRetries, ai.secondsBetweenRetries)
+	response, e := utilities.DoWithRetry(client, request, service.maxRetries, service.secondsBetweenRetries)
 	ee.SetResponse(response)
 
 	if response != nil {
