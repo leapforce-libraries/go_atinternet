@@ -5,6 +5,7 @@ import (
 
 	"cloud.google.com/go/civil"
 	errortools "github.com/leapforce-libraries/go_errortools"
+	go_http "github.com/leapforce-libraries/go_http"
 )
 
 // generic structs
@@ -168,7 +169,13 @@ func (service *Service) GetData(params *GetDataParams) (*DataFeed, *errortools.E
 	}
 
 	data := Data{}
-	_, _, e := service.Post("getData", params.Params(), &data)
+
+	requestConfig := go_http.RequestConfig{
+		URL:           service.url("getData"),
+		BodyModel:     params.Params(),
+		ResponseModel: &data,
+	}
+	_, _, e := service.post(&requestConfig)
 
 	return &data.DataFeed, e
 }
@@ -213,7 +220,13 @@ func (service *Service) GetRowCount(params *GetRowCountParams) (*RowCounts, *err
 	}
 
 	rowCounts := RowCounts{}
-	_, _, e := service.Post("getRowCount", params.Params(), &rowCounts)
+
+	requestConfig := go_http.RequestConfig{
+		URL:           service.url("getRowCount"),
+		BodyModel:     params.Params(),
+		ResponseModel: &rowCounts,
+	}
+	_, _, e := service.post(&requestConfig)
 
 	return &rowCounts, e
 }
@@ -237,7 +250,13 @@ func (service *Service) GetTotal(params *GetTotalParams) (*RowCounts, *errortool
 	}
 
 	rowCounts := RowCounts{}
-	_, _, e := service.Post("getTotal", params.Params(), &rowCounts)
+
+	requestConfig := go_http.RequestConfig{
+		URL:           service.url("getTotal"),
+		BodyModel:     params.Params(),
+		ResponseModel: &rowCounts,
+	}
+	_, _, e := service.post(&requestConfig)
 
 	return &rowCounts, e
 }

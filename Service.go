@@ -1,14 +1,11 @@
 package atinternet
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	errortools "github.com/leapforce-libraries/go_errortools"
-	utilities "github.com/leapforce-libraries/go_utilities"
+	go_http "github.com/leapforce-libraries/go_http"
 )
 
 const (
@@ -18,10 +15,9 @@ const (
 // type
 //
 type Service struct {
-	accessKey             string
-	secretKey             string
-	maxRetries            uint
-	secondsBetweenRetries uint32
+	accessKey   string
+	secretKey   string
+	httpService *go_http.Service
 }
 
 type ServiceConfig struct {
@@ -32,153 +28,64 @@ type ServiceConfig struct {
 }
 
 func NewService(config ServiceConfig) (*Service, *errortools.Error) {
-	service := new(Service)
-
 	if config.AccessKey == "" {
 		return nil, errortools.ErrorMessage("AccessKey not provided")
 	}
-	service.accessKey = config.AccessKey
 
 	if config.SecretKey == "" {
 		return nil, errortools.ErrorMessage("SecretKey not provided")
 	}
-	service.secretKey = config.SecretKey
 
-	if config.MaxRetries != nil {
-		service.maxRetries = *config.MaxRetries
-	} else {
-		service.maxRetries = 0
+	httpServiceConfig := go_http.ServiceConfig{
+		MaxRetries:            config.MaxRetries,
+		SecondsBetweenRetries: config.SecondsBetweenRetries,
 	}
 
-	if config.SecondsBetweenRetries != nil {
-		service.secondsBetweenRetries = *config.SecondsBetweenRetries
-	} else {
-		service.secondsBetweenRetries = 3
+	return &Service{
+		accessKey:   config.AccessKey,
+		secretKey:   config.SecretKey,
+		httpService: go_http.NewService(httpServiceConfig),
+	}, nil
+}
+
+func (service *Service) httpRequest(httpMethod string, requestConfig *go_http.RequestConfig) (*http.Request, *http.Response, *errortools.Error) {
+	// add authentication header
+	header := http.Header{}
+	header.Set("x-api-key", service.apiKey())
+	(*requestConfig).NonDefaultHeaders = &header
+
+	// add error model
+	errorResponse := ErrorResponse{}
+	(*requestConfig).ErrorModel = &errorResponse
+
+	request, response, e := service.httpService.HTTPRequest(httpMethod, requestConfig)
+	if errorResponse.ErrorMessage != "" {
+		e.SetMessage(errorResponse.ErrorMessage)
 	}
 
-	return service, nil
+	return request, response, e
 }
 
 func (service *Service) apiKey() string {
 	return fmt.Sprintf("%s_%s", service.accessKey, service.secretKey)
 }
 
-// generic Get method
-//
-func (service *Service) Get(urlPath string, responseModel interface{}) (*http.Request, *http.Response, *errortools.Error) {
-	return service.httpRequest(http.MethodGet, urlPath, nil, responseModel)
+func (service *Service) url(path string) string {
+	return fmt.Sprintf("%s/%s", APIURL, path)
 }
 
-// generic Post method
-//
-func (service *Service) Post(urlPath string, bodyModel interface{}, responseModel interface{}) (*http.Request, *http.Response, *errortools.Error) {
-	return service.httpRequest(http.MethodPost, urlPath, bodyModel, responseModel)
+func (service *Service) get(requestConfig *go_http.RequestConfig) (*http.Request, *http.Response, *errortools.Error) {
+	return service.httpRequest(http.MethodGet, requestConfig)
 }
 
-func (service *Service) httpRequest(httpMethod string, urlPath string, bodyModel interface{}, responseModel interface{}) (*http.Request, *http.Response, *errortools.Error) {
-	client := new(http.Client)
+func (service *Service) post(requestConfig *go_http.RequestConfig) (*http.Request, *http.Response, *errortools.Error) {
+	return service.httpRequest(http.MethodPost, requestConfig)
+}
 
-	url := fmt.Sprintf("%s/%s", APIURL, urlPath)
-	//fmt.Println(url)
+func (service *Service) put(requestConfig *go_http.RequestConfig) (*http.Request, *http.Response, *errortools.Error) {
+	return service.httpRequest(http.MethodPut, requestConfig)
+}
 
-	buffer := new(bytes.Buffer)
-	buffer = nil
-
-	if bodyModel != nil {
-		b, err := json.Marshal(bodyModel)
-		if err != nil {
-			return nil, nil, errortools.ErrorMessage(err)
-		}
-		//fmt.Println(string(b)) //temp
-		buffer = bytes.NewBuffer(b)
-	}
-
-	ee := new(errortools.Error)
-
-	request, err := func() (*http.Request, error) {
-		// function necessary because a Buffer nil pointer differs from a nil value
-		if buffer == nil {
-			return http.NewRequest(httpMethod, url, nil)
-		}
-		return http.NewRequest(httpMethod, url, buffer)
-	}()
-
-	ee.SetRequest(request)
-
-	if err != nil {
-		ee.SetMessage(err)
-		return request, nil, ee
-	}
-
-	// Add authorization token to header
-	request.Header.Set("Accept", "application/json")
-	request.Header.Set("x-api-key", service.apiKey())
-
-	if bodyModel != nil {
-		request.Header.Set("Content-Type", "application/json")
-	}
-
-	// Send out the HTTP request
-	response, e := utilities.DoWithRetry(client, request, service.maxRetries, service.secondsBetweenRetries)
-	ee.SetResponse(response)
-
-	if response != nil {
-		// Check HTTP StatusCode
-		if response.StatusCode < 200 || response.StatusCode > 299 {
-			fmt.Println(fmt.Sprintf("ERROR in %s", httpMethod))
-			fmt.Println("url", url)
-			fmt.Println("StatusCode", response.StatusCode)
-
-			ee.SetMessage(fmt.Sprintf("Server returned statuscode %v", response.StatusCode))
-		}
-
-		if response.Body != nil {
-
-			defer response.Body.Close()
-
-			b, err := ioutil.ReadAll(response.Body)
-			if err != nil {
-				ee.SetMessage(err)
-				return request, response, ee
-			}
-
-			if e != nil {
-				// try to unmarshal to ErrorResponse
-				errorResponse := ErrorResponse{}
-				errError := json.Unmarshal(b, &errorResponse)
-
-				if errError == nil {
-					if errorResponse.ErrorMessage != "" {
-						ee.SetMessage(errorResponse.ErrorMessage)
-					}
-				} else {
-					// try to unmarshal to string
-					errorString := ""
-					errError = json.Unmarshal(b, &errorString)
-
-					if errorString != "" {
-						ee.SetMessage(errorString)
-					}
-				}
-
-				errortools.CaptureInfo(errError)
-
-				return request, response, ee
-			}
-
-			if responseModel != nil {
-				err = json.Unmarshal(b, &responseModel)
-				if err != nil {
-					ee.SetMessage(err)
-					return request, response, ee
-				}
-			}
-		}
-	}
-
-	if e != nil {
-		return request, response, e
-	}
-
-	return request, response, nil
+func (service *Service) delete(requestConfig *go_http.RequestConfig) (*http.Request, *http.Response, *errortools.Error) {
+	return service.httpRequest(http.MethodDelete, requestConfig)
 }
