@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	APIURL string = "https://api.atinternet.io/v3/data"
+	apiURL string = "https://api.atinternet.io/v3/data"
 )
 
 // type
@@ -21,30 +21,32 @@ type Service struct {
 }
 
 type ServiceConfig struct {
-	AccessKey             string
-	SecretKey             string
-	MaxRetries            *uint
-	SecondsBetweenRetries *uint32
+	AccessKey string
+	SecretKey string
 }
 
-func NewService(config ServiceConfig) (*Service, *errortools.Error) {
-	if config.AccessKey == "" {
+func NewService(serviceConfig *ServiceConfig) (*Service, *errortools.Error) {
+	if serviceConfig == nil {
+		return nil, errortools.ErrorMessage("ServiceConfig must not be a nil pointer")
+	}
+
+	if serviceConfig.AccessKey == "" {
 		return nil, errortools.ErrorMessage("AccessKey not provided")
 	}
 
-	if config.SecretKey == "" {
+	if serviceConfig.SecretKey == "" {
 		return nil, errortools.ErrorMessage("SecretKey not provided")
 	}
 
-	httpServiceConfig := go_http.ServiceConfig{
-		MaxRetries:            config.MaxRetries,
-		SecondsBetweenRetries: config.SecondsBetweenRetries,
+	httpService, e := go_http.NewService(&go_http.ServiceConfig{})
+	if e != nil {
+		return nil, e
 	}
 
 	return &Service{
-		accessKey:   config.AccessKey,
-		secretKey:   config.SecretKey,
-		httpService: go_http.NewService(httpServiceConfig),
+		accessKey:   serviceConfig.AccessKey,
+		secretKey:   serviceConfig.SecretKey,
+		httpService: httpService,
 	}, nil
 }
 
@@ -71,7 +73,7 @@ func (service *Service) apiKey() string {
 }
 
 func (service *Service) url(path string) string {
-	return fmt.Sprintf("%s/%s", APIURL, path)
+	return fmt.Sprintf("%s/%s", apiURL, path)
 }
 
 func (service *Service) get(requestConfig *go_http.RequestConfig) (*http.Request, *http.Response, *errortools.Error) {

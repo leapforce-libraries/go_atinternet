@@ -16,8 +16,8 @@ type params struct {
 	Filter     *FilterSet          `json:"filter,omitempty"`
 	Space      Space               `json:"space"`
 	Period     map[string][]period `json:"period"`
-	MaxResults *int                `json:"max-results,omitempty"`
-	PageNum    *int                `json:"page-num,omitempty"`
+	MaxResults *int64              `json:"max-results,omitempty"`
+	PageNum    *int64              `json:"page-num,omitempty"`
 	Options    *Options            `json:"options,omitempty"`
 }
 
@@ -41,7 +41,7 @@ type Filter struct {
 }
 
 type Space struct {
-	S []int `json:"s"`
+	S []int64 `json:"s"`
 }
 
 type period struct {
@@ -106,10 +106,10 @@ type GetDataParams struct {
 	Metrics    Metrics
 	Sort       *Sort
 	Filter     *FilterSet
-	Space      []int
+	Space      []int64
 	Period     Period
-	MaxResults *int
-	PageNum    *int
+	MaxResults *int64
+	PageNum    *int64
 	Options    *Options
 }
 
@@ -176,6 +176,9 @@ func (service *Service) GetData(params *GetDataParams) (*DataFeed, *errortools.E
 		ResponseModel: &data,
 	}
 	_, _, e := service.post(&requestConfig)
+	//fmt.Println(requestConfig.URL)
+	//b, _ := json.Marshal(requestConfig.BodyModel)
+	//fmt.Println(string(b))
 
 	return &data.DataFeed, e
 }
@@ -186,7 +189,7 @@ type GetRowCountParams struct {
 	Properties Properties
 	Metrics    Metrics
 	Filter     *FilterSet
-	Space      []int
+	Space      []int64
 	Period     Period
 	Options    *Options
 }
