@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	apiURL string = "https://api.atinternet.io/v3/data"
+	apiURL2 string = "https://api.atinternet.io/data/v2/json"
+	apiURL3 string = "https://api.atinternet.io/v3/data"
 )
 
 // type
@@ -72,8 +73,12 @@ func (service *Service) apiKey() string {
 	return fmt.Sprintf("%s_%s", service.accessKey, service.secretKey)
 }
 
-func (service *Service) url(path string) string {
-	return fmt.Sprintf("%s/%s", apiURL, path)
+func (service *Service) url2(path string) string {
+	return fmt.Sprintf("%s/%s", apiURL2, path)
+}
+
+func (service *Service) url3(path string) string {
+	return fmt.Sprintf("%s/%s", apiURL3, path)
 }
 
 func (service *Service) get(requestConfig *go_http.RequestConfig) (*http.Request, *http.Response, *errortools.Error) {

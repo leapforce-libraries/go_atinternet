@@ -2,6 +2,8 @@ package atinternet
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
 
 	"cloud.google.com/go/civil"
 	errortools "github.com/leapforce-libraries/go_errortools"
@@ -41,7 +43,13 @@ type Filter struct {
 }
 
 type Space struct {
-	S []int64 `json:"s"`
+	Sites      *[]int64    `json:"s,omitempty"`
+	Level2Site *Level2Site `json:"l2s,omitempty"`
+}
+
+type Level2Site struct {
+	SiteID       int64 `json:"s"`
+	Level2SiteID int64 `json:"l2"`
 }
 
 type period struct {
@@ -106,7 +114,7 @@ type GetDataParams struct {
 	Metrics    Metrics
 	Sort       *Sort
 	Filter     *FilterSet
-	Space      []int64
+	Space      Space
 	Period     Period
 	MaxResults *int64
 	PageNum    *int64
@@ -123,7 +131,7 @@ func (p *GetDataParams) Params() *params {
 	pa.Columns = append(pa.Columns, p.Properties.String()...)
 	pa.Columns = append(pa.Columns, p.Metrics.String()...)
 	pa.Filter = p.Filter
-	pa.Space = Space{p.Space}
+	pa.Space = p.Space
 	pa.Options = p.Options
 	pa.Period = p.Period.periods
 	pa.MaxResults = p.MaxResults
@@ -163,7 +171,71 @@ type Context struct {
 	} `json:"Periods"`
 }
 
-func (service *Service) GetData(params *GetDataParams) (*DataFeed, *errortools.Error) {
+func (service *Service) GetData2(params *GetDataParams) (*DataFeed, *errortools.Error) {
+	if params == nil {
+		return nil, nil
+	}
+
+	values := url.Values{}
+	columns := []string{}
+	if params.MaxResults != nil {
+		values.Set("max-results", fmt.Sprintf("%v", *params.MaxResults))
+	}
+	for _, metric := range params.Metrics.String() {
+		columns = append(columns, metric)
+	}
+	if params.PageNum != nil {
+		values.Set("page-num", fmt.Sprintf("%v", *params.PageNum))
+	}
+	for _, period := range params.Period.periods {
+		periods := []string{}
+		for _, p := range period {
+			periods = append(periods, fmt.Sprintf("%s:{start:'%s',end:'%s'}", p.Type, p.Start, p.End))
+		}
+		values.Set("period", fmt.Sprintf("{%s}", strings.Join(periods, ",")))
+	}
+	for _, property := range params.Properties.String() {
+		columns = append(columns, property)
+	}
+	if params.Sort != nil {
+		sorts := []string{}
+		for _, sort := range params.Sort.sort {
+			sorts = append(sorts, sort)
+		}
+		values.Set("sort", fmt.Sprintf("{%s}", strings.Join(sorts, ",")))
+	}
+	spaces := []string{}
+	if params.Space.Sites != nil {
+		if len(*params.Space.Sites) == 1 {
+			spaces = append(spaces, fmt.Sprintf("s:%v", (*params.Space.Sites)[0]))
+		} else {
+			sites := []string{}
+			for _, site := range *params.Space.Sites {
+				sites = append(sites, fmt.Sprintf("%v", site))
+			}
+			spaces = append(spaces, fmt.Sprintf("s:{%s}", strings.Join(sites, ",")))
+		}
+	}
+	if params.Space.Level2Site != nil {
+		spaces = append(spaces, fmt.Sprintf("l2s:{s:%v,l2:%v}", params.Space.Level2Site.SiteID, params.Space.Level2Site.Level2SiteID))
+	}
+	values.Set("columns", fmt.Sprintf("{%s}", strings.Join(columns, ",")))
+	values.Set("space", fmt.Sprintf("{%s}", strings.Join(spaces, ",")))
+
+	data := Data{}
+
+	//fmt.Println(service.url2(fmt.Sprintf("getData?%s", values.Encode())))
+
+	requestConfig := go_http.RequestConfig{
+		URL:           service.url2(fmt.Sprintf("getData?%s", values.Encode())),
+		ResponseModel: &data,
+	}
+	_, _, e := service.post(&requestConfig)
+
+	return &data.DataFeed, e
+}
+
+func (service *Service) GetData3(params *GetDataParams) (*DataFeed, *errortools.Error) {
 	if params == nil {
 		return nil, nil
 	}
@@ -171,7 +243,7 @@ func (service *Service) GetData(params *GetDataParams) (*DataFeed, *errortools.E
 	data := Data{}
 
 	requestConfig := go_http.RequestConfig{
-		URL:           service.url("getData"),
+		URL:           service.url3("getData"),
 		BodyModel:     params.Params(),
 		ResponseModel: &data,
 	}
@@ -189,7 +261,7 @@ type GetRowCountParams struct {
 	Properties Properties
 	Metrics    Metrics
 	Filter     *FilterSet
-	Space      []int64
+	Space      Space
 	Period     Period
 	Options    *Options
 }
@@ -204,7 +276,7 @@ func (p *GetRowCountParams) Params() *params {
 	pa.Columns = append(pa.Columns, p.Properties.String()...)
 	pa.Columns = append(pa.Columns, p.Metrics.String()...)
 	pa.Filter = p.Filter
-	pa.Space = Space{p.Space}
+	pa.Space = p.Space
 	pa.Options = p.Options
 	pa.Period = p.Period.periods
 
@@ -217,7 +289,7 @@ type RowCounts struct {
 	} `json:"RowCounts"`
 }
 
-func (service *Service) GetRowCount(params *GetRowCountParams) (*RowCounts, *errortools.Error) {
+func (service *Service) GetRowCount3(params *GetRowCountParams) (*RowCounts, *errortools.Error) {
 	if params == nil {
 		return nil, nil
 	}
@@ -225,7 +297,7 @@ func (service *Service) GetRowCount(params *GetRowCountParams) (*RowCounts, *err
 	rowCounts := RowCounts{}
 
 	requestConfig := go_http.RequestConfig{
-		URL:           service.url("getRowCount"),
+		URL:           service.url3("getRowCount"),
 		BodyModel:     params.Params(),
 		ResponseModel: &rowCounts,
 	}
@@ -247,7 +319,7 @@ func (p *GetTotalParams) Params() *params {
 	return p1.Params()
 }
 
-func (service *Service) GetTotal(params *GetTotalParams) (*RowCounts, *errortools.Error) {
+func (service *Service) GetTotal3(params *GetTotalParams) (*RowCounts, *errortools.Error) {
 	if params == nil {
 		return nil, nil
 	}
@@ -255,7 +327,7 @@ func (service *Service) GetTotal(params *GetTotalParams) (*RowCounts, *errortool
 	rowCounts := RowCounts{}
 
 	requestConfig := go_http.RequestConfig{
-		URL:           service.url("getTotal"),
+		URL:           service.url3("getTotal"),
 		BodyModel:     params.Params(),
 		ResponseModel: &rowCounts,
 	}
