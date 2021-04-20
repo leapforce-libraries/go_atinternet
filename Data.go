@@ -10,19 +10,26 @@ import (
 	go_http "github.com/leapforce-libraries/go_http"
 )
 
-// generic structs
-//
+type GetDataVersion string
+
+const (
+	GetDataVersion2 GetDataVersion = "v2"
+	GetDataVersion3 GetDataVersion = "v3"
+)
+
 type params struct {
-	Columns    []string            `json:"columns"`
-	Sort       *[]string           `json:"sort,omitempty"`
-	Filter     *FilterSet          `json:"filter,omitempty"`
-	Space      Space               `json:"space"`
-	Period     map[string][]period `json:"period"`
-	MaxResults *int64              `json:"max-results,omitempty"`
-	PageNum    *int64              `json:"page-num,omitempty"`
-	Options    *Options            `json:"options,omitempty"`
+	Columns []string  `json:"columns"`
+	Sort    *[]string `json:"sort,omitempty"`
+	//Filter       *FilterSet          `json:"filter,omitempty"`
+	FilterString *string             `json:"filter,omitempty"`
+	Space        Space               `json:"space"`
+	Period       map[string][]period `json:"period"`
+	MaxResults   *int64              `json:"max-results,omitempty"`
+	PageNum      *int64              `json:"page-num,omitempty"`
+	Options      *Options            `json:"options,omitempty"`
 }
 
+/*
 type FilterSet struct {
 	Metric   *Filters `json:"metric,omitempty"`
 	Property *Filters `json:"property,omitempty"`
@@ -40,7 +47,7 @@ type Filters struct {
 
 type Filter struct {
 	Filter map[string]map[string]interface{}
-}
+}*/
 
 type Space struct {
 	Sites      *[]int64    `json:"s,omitempty"`
@@ -107,18 +114,30 @@ func (p *Period) AddDay(date civil.Date) {
 	}}
 }
 
+func (p *Period) AddDateRange(startDate civil.Date, endDate civil.Date) {
+	if p.periods == nil {
+		p.periods = make(map[string][]period)
+	}
+
+	p.periods[fmt.Sprintf("p%v", len(p.periods)+1)] = []period{period{
+		Type:  "D",
+		Start: startDate.String(),
+		End:   endDate.String(),
+	}}
+}
+
 // GetData
 //
 type GetDataParams struct {
-	Properties Properties
-	Metrics    Metrics
-	Sort       *Sort
-	Filter     *FilterSet
-	Space      Space
-	Period     Period
-	MaxResults *int64
-	PageNum    *int64
-	Options    *Options
+	Properties   Properties
+	Metrics      Metrics
+	Sort         *Sort
+	FilterString *string
+	Space        Space
+	Period       Period
+	MaxResults   *int64
+	PageNum      *int64
+	Options      *Options
 }
 
 func (p *GetDataParams) Params() *params {
@@ -130,7 +149,7 @@ func (p *GetDataParams) Params() *params {
 
 	pa.Columns = append(pa.Columns, p.Properties.String()...)
 	pa.Columns = append(pa.Columns, p.Metrics.String()...)
-	pa.Filter = p.Filter
+	pa.FilterString = p.FilterString
 	pa.Space = p.Space
 	pa.Options = p.Options
 	pa.Period = p.Period.periods
@@ -149,10 +168,14 @@ type Data struct {
 	DataFeed DataFeed `json:"DataFeed"`
 }
 
+type Data2 struct {
+	DataFeed []DataFeed `json:"DataFeed"`
+}
+
 type DataFeed struct {
 	Columns []Column                 `json:"Columns"`
 	Rows    []map[string]interface{} `json:"Rows"`
-	Context Context                  `json:"Context"`
+	Context *Context                 `json:"Context"`
 }
 
 type Column struct {
@@ -163,6 +186,20 @@ type Column struct {
 	Label        string `json:"Label"`
 	Description  string `json:"Description"`
 	Filterable   bool   `json:"Filterable"`
+	Pie          *bool  `json:"Pie"`
+	Precision    *int   `json:"Precision"`
+	Summable     *bool  `json:"Summable"`
+}
+
+type Column2 struct {
+	Name         string  `json:"Name"`
+	Label        string  `json:"Label"`
+	Category     string  `json:"Category"`
+	Type         string  `json:"Type"`
+	CustomerType string  `json:"CustomerType"`
+	FamilyName   *string `json:"FamilyName"`
+	Summable     *bool   `json:"Summable"`
+	Pie          *bool   `json:"Pie"`
 }
 
 type Context struct {
@@ -171,13 +208,27 @@ type Context struct {
 	} `json:"Periods"`
 }
 
-func (service *Service) GetData2(params *GetDataParams) (*DataFeed, *errortools.Error) {
+func (service *Service) GetData(params *GetDataParams, version GetDataVersion) (*[]DataFeed, *errortools.Error) {
+	if version == GetDataVersion2 {
+		return service.getData2(params)
+	} else if version == GetDataVersion3 {
+		return service.getData3(params)
+	}
+
+	return nil, errortools.ErrorMessagef("Invalid version '%v'", version)
+}
+
+func (service *Service) getData2(params *GetDataParams) (*[]DataFeed, *errortools.Error) {
 	if params == nil {
 		return nil, nil
 	}
 
 	values := url.Values{}
+
 	columns := []string{}
+	if params.FilterString != nil {
+		values.Set("filter", *params.FilterString)
+	}
 	if params.MaxResults != nil {
 		values.Set("max-results", fmt.Sprintf("%v", *params.MaxResults))
 	}
@@ -222,7 +273,7 @@ func (service *Service) GetData2(params *GetDataParams) (*DataFeed, *errortools.
 	values.Set("columns", fmt.Sprintf("{%s}", strings.Join(columns, ",")))
 	values.Set("space", fmt.Sprintf("{%s}", strings.Join(spaces, ",")))
 
-	data := Data{}
+	data := Data2{}
 
 	//fmt.Println(service.url2(fmt.Sprintf("getData?%s", values.Encode())))
 
@@ -230,12 +281,12 @@ func (service *Service) GetData2(params *GetDataParams) (*DataFeed, *errortools.
 		URL:           service.url2(fmt.Sprintf("getData?%s", values.Encode())),
 		ResponseModel: &data,
 	}
-	_, _, e := service.post(&requestConfig)
+	_, _, e := service.get(&requestConfig)
 
 	return &data.DataFeed, e
 }
 
-func (service *Service) GetData3(params *GetDataParams) (*DataFeed, *errortools.Error) {
+func (service *Service) getData3(params *GetDataParams) (*[]DataFeed, *errortools.Error) {
 	if params == nil {
 		return nil, nil
 	}
@@ -247,23 +298,23 @@ func (service *Service) GetData3(params *GetDataParams) (*DataFeed, *errortools.
 		BodyModel:     params.Params(),
 		ResponseModel: &data,
 	}
-	_, _, e := service.post(&requestConfig)
 	//fmt.Println(requestConfig.URL)
 	//b, _ := json.Marshal(requestConfig.BodyModel)
 	//fmt.Println(string(b))
+	_, _, e := service.post(&requestConfig)
 
-	return &data.DataFeed, e
+	return &[]DataFeed{data.DataFeed}, e
 }
 
 // GetRowCount
 //
 type GetRowCountParams struct {
-	Properties Properties
-	Metrics    Metrics
-	Filter     *FilterSet
-	Space      Space
-	Period     Period
-	Options    *Options
+	Properties   Properties
+	Metrics      Metrics
+	FilterString *string
+	Space        Space
+	Period       Period
+	Options      *Options
 }
 
 func (p *GetRowCountParams) Params() *params {
@@ -275,7 +326,7 @@ func (p *GetRowCountParams) Params() *params {
 
 	pa.Columns = append(pa.Columns, p.Properties.String()...)
 	pa.Columns = append(pa.Columns, p.Metrics.String()...)
-	pa.Filter = p.Filter
+	pa.FilterString = p.FilterString
 	pa.Space = p.Space
 	pa.Options = p.Options
 	pa.Period = p.Period.periods

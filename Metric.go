@@ -128,8 +128,8 @@ const (
 	MVSales                       Metric = "m_v_sales"
 	MVSalesPa                     Metric = "m_v_sales_pa"
 	MVSalesPerConversions1        Metric = "m_v_sales_per_conversions1"
-
-	MUniqueVisitors Metric = "m_unique_visitors"
-	MAppNewVisitors Metric = "m_app_newvisitors"
-	MAppReturnV     Metric = "m_app_returnv"
+	MUniqueVisitors               Metric = "m_unique_visitors"
+	MAppNewVisitors               Metric = "m_app_newvisitors"
+	MAppReturnV                   Metric = "m_app_returnv"
+	M2UniqueVisitors              Metric = "m_uv"
 )
