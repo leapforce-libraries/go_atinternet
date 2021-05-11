@@ -299,7 +299,9 @@ const (
 	PVisitorPrivacyMode        Property = "visitor_privacy_mode"
 	// api version 2 dimensions
 	P2Broadcaster  Property = "cl_458599"
-	P2Omroep3      Property = "cl_458717"
+	P2Broadcaster1 Property = "cl_458715"
+	P2Broadcaster2 Property = "cl_458716"
+	P2Broadcaster3 Property = "cl_458717"
 	P2Platform     Property = "cl_458598"
 	P2PageChapter1 Property = "d_page_chap1"
 )
