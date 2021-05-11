@@ -111,6 +111,7 @@ const (
 	MTax                          Metric = "m_tax"
 	MTimeSpent                    Metric = "m_time_spent"
 	MTimeSpentBufferingRead       Metric = "m_time_spent_buffering_read"
+	MTimeSpentLoads               Metric = "m_time_spent_loads"
 	MTimeSpentPerConvFunnel       Metric = "m_time_spent_per_conv_funnel"
 	MTimeSpentPerFunnel           Metric = "m_time_spent_per_funnel"
 	MTimeSpentPerPages            Metric = "m_time_spent_per_pages"
