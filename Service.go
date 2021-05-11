@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	apiName string = "ATInternet"
 	apiURL2 string = "https://api.atinternet.io/data/v2/json"
 	apiURL3 string = "https://api.atinternet.io/v3/data"
 )
@@ -95,4 +96,20 @@ func (service *Service) put(requestConfig *go_http.RequestConfig) (*http.Request
 
 func (service *Service) delete(requestConfig *go_http.RequestConfig) (*http.Request, *http.Response, *errortools.Error) {
 	return service.httpRequest(http.MethodDelete, requestConfig)
+}
+
+func (service Service) APIName() string {
+	return apiName
+}
+
+func (service Service) APIKey() string {
+	return service.accessKey
+}
+
+func (service Service) APICallCount() int64 {
+	return service.httpService.RequestCount()
+}
+
+func (service Service) APIReset() {
+	service.httpService.ResetRequestCount()
 }
