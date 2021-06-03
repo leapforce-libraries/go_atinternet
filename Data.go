@@ -18,35 +18,68 @@ const (
 )
 
 type params struct {
-	Columns []string  `json:"columns"`
-	Sort    *[]string `json:"sort,omitempty"`
-	//Filter       *FilterSet          `json:"filter,omitempty"`
-	FilterString *string             `json:"filter,omitempty"`
-	Space        Space               `json:"space"`
-	Period       map[string][]period `json:"period"`
-	MaxResults   *int64              `json:"max-results,omitempty"`
-	PageNum      *int64              `json:"page-num,omitempty"`
-	Options      *Options            `json:"options,omitempty"`
+	Columns       []string            `json:"columns"`
+	Sort          *[]string           `json:"sort,omitempty"`
+	Filter        *FilterSet          `json:"filter,omitempty"`
+	FilterString2 *string             `json:"-"`
+	Space         Space               `json:"space"`
+	Period        map[string][]period `json:"period"`
+	MaxResults    *int64              `json:"max-results,omitempty"`
+	PageNum       *int64              `json:"page-num,omitempty"`
+	Options       *Options            `json:"options,omitempty"`
+}
+
+type FilterSet struct {
+	Metric   *map[string]map[string]interface{} `json:"metric,omitempty"`
+	Property *map[string]map[string]interface{} `json:"property,omitempty"`
+}
+
+func (filterSet *FilterSet) AddMetricFilter(fieldName string, operator string, value interface{}) {
+	if filterSet.Metric == nil {
+		_m := make(map[string]map[string]interface{})
+		filterSet.Metric = &_m
+	}
+
+	addFilter(filterSet.Metric, fieldName, operator, value)
+}
+
+func (filterSet *FilterSet) AddPropertyFilter(fieldName string, operator string, value interface{}) {
+	if filterSet.Property == nil {
+		_m := make(map[string]map[string]interface{})
+		filterSet.Property = &_m
+	}
+
+	addFilter(filterSet.Property, fieldName, operator, value)
+}
+
+func addFilter(m *map[string]map[string]interface{}, fieldName string, operator string, value interface{}) {
+	m1 := make(map[string]interface{})
+	m1[operator] = value
+
+	(*m)[fieldName] = m1
 }
 
 /*
-type FilterSet struct {
-	Metric   *Filters `json:"metric,omitempty"`
-	Property *Filters `json:"property,omitempty"`
-}
-
 type Filters struct {
-	Filter    *Filter
+	Filter    *map[string]map[string]interface{} `json:"-"`
 	AndFilter *struct {
-		And []Filters `json:"$AND"`
-	}
+		And []Filters
+	} `json:"$AND,omitempty"`
 	OrFilter *struct {
-		Or []Filters `json:"$OR"`
-	}
+		Or []Filters
+	} `json:"$OR,omitempty"`
 }
 
-type Filter struct {
-	Filter map[string]map[string]interface{}
+func (filters *Filters) AddFilter(fieldName string, operator string, value interface{}) {
+	if filters.Filter == nil {
+		m := make(map[string]map[string]interface{})
+		filters.Filter = &m
+	}
+
+	m1 := make(map[string]interface{})
+	m1[operator] = value
+
+	(*filters.Filter)[fieldName] = m1
 }*/
 
 type Space struct {
@@ -129,15 +162,16 @@ func (p *Period) AddDateRange(startDate civil.Date, endDate civil.Date) {
 // GetData
 //
 type GetDataParams struct {
-	Properties   Properties
-	Metrics      Metrics
-	Sort         *Sort
-	FilterString *string
-	Space        Space
-	Period       Period
-	MaxResults   *int64
-	PageNum      *int64
-	Options      *Options
+	Properties    Properties
+	Metrics       Metrics
+	Sort          *Sort
+	Filter        *FilterSet
+	FilterString2 *string
+	Space         Space
+	Period        Period
+	MaxResults    *int64
+	PageNum       *int64
+	Options       *Options
 }
 
 func (p *GetDataParams) Params() *params {
@@ -149,7 +183,8 @@ func (p *GetDataParams) Params() *params {
 
 	pa.Columns = append(pa.Columns, p.Properties.String()...)
 	pa.Columns = append(pa.Columns, p.Metrics.String()...)
-	pa.FilterString = p.FilterString
+	pa.Filter = p.Filter
+	pa.FilterString2 = p.FilterString2
 	pa.Space = p.Space
 	pa.Options = p.Options
 	pa.Period = p.Period.periods
@@ -226,8 +261,8 @@ func (service *Service) getData2(params *GetDataParams) (*[]DataFeed, *errortool
 	values := url.Values{}
 
 	columns := []string{}
-	if params.FilterString != nil {
-		values.Set("filter", *params.FilterString)
+	if params.FilterString2 != nil {
+		values.Set("filter", *params.FilterString2)
 	}
 	if params.MaxResults != nil {
 		values.Set("max-results", fmt.Sprintf("%v", *params.MaxResults))
@@ -326,7 +361,7 @@ func (p *GetRowCountParams) Params() *params {
 
 	pa.Columns = append(pa.Columns, p.Properties.String()...)
 	pa.Columns = append(pa.Columns, p.Metrics.String()...)
-	pa.FilterString = p.FilterString
+	pa.FilterString2 = p.FilterString
 	pa.Space = p.Space
 	pa.Options = p.Options
 	pa.Period = p.Period.periods
