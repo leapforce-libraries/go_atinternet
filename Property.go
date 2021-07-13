@@ -303,6 +303,7 @@ const (
 	P2Broadcaster2 Property = "cl_458716"
 	P2Broadcaster3 Property = "cl_458717"
 	P2Platform     Property = "cl_458598"
+	P2Page         Property = "d_page"
 	P2PageChapter1 Property = "d_page_chap1"
 	P2PageChapter2 Property = "d_page_chap2"
 	P2PageChapter3 Property = "d_page_chap3"
