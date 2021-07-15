@@ -252,6 +252,7 @@ const (
 	PSrcURL                    Property = "src_url"
 	PSrcURLDomain              Property = "src_url_domain"
 	PSrcVariant                Property = "src_variant"
+	PSubsite                   Property = "subsite"
 	PTransactionDate           Property = "transaction_date"
 	PTransactionFirstpurchase  Property = "transaction_firstpurchase"
 	PTransactionID             Property = "transaction_id"
