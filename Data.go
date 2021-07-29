@@ -1,6 +1,7 @@
 package atinternet
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
@@ -8,6 +9,7 @@ import (
 	"cloud.google.com/go/civil"
 	errortools "github.com/leapforce-libraries/go_errortools"
 	go_http "github.com/leapforce-libraries/go_http"
+	go_types "github.com/leapforce-libraries/go_types"
 )
 
 type GetDataVersion string
@@ -30,26 +32,26 @@ type params struct {
 }
 
 type FilterSet struct {
-	Metric   *map[string]map[string]interface{} `json:"metric,omitempty"`
-	Property *map[string]map[string]interface{} `json:"property,omitempty"`
+	Metric   *Filters `json:"metric,omitempty"`
+	Property *Filters `json:"property,omitempty"`
 }
 
-func (filterSet *FilterSet) AddMetricFilter(fieldName string, operator string, value interface{}) {
-	if filterSet.Metric == nil {
-		_m := make(map[string]map[string]interface{})
-		filterSet.Metric = &_m
+/*func (filters Filters) AddMetricFilter(fieldName string, operator string, value interface{}) {
+	if filters == nil {
+		_m := make(map[string]interface{})
+		filters = _m
 	}
 
-	addFilter(filterSet.Metric, fieldName, operator, value)
+	addFilter(filters, fieldName, operator, value)
 }
 
-func (filterSet *FilterSet) AddPropertyFilter(fieldName string, operator string, value interface{}) {
-	if filterSet.Property == nil {
-		_m := make(map[string]map[string]interface{})
-		filterSet.Property = &_m
+func (filters Filters) AddPropertyFilter(fieldName string, operator string, value interface{}) {
+	if filters == nil {
+		_m := make(map[string]interface{})
+		filters = _m
 	}
 
-	addFilter(filterSet.Property, fieldName, operator, value)
+	addFilter(filters, fieldName, operator, value)
 }
 
 func addFilter(m *map[string]map[string]interface{}, fieldName string, operator string, value interface{}) {
@@ -57,30 +59,45 @@ func addFilter(m *map[string]map[string]interface{}, fieldName string, operator 
 	m1[operator] = value
 
 	(*m)[fieldName] = m1
-}
+}*/
 
-/*
-type Filters struct {
+/*type Filters struct {
 	Filter    *map[string]map[string]interface{} `json:"-"`
-	AndFilter *struct {
-		And []Filters
-	} `json:"$AND,omitempty"`
-	OrFilter *struct {
-		Or []Filters
-	} `json:"$OR,omitempty"`
-}
+	AndFilter *Filters                           `json:"$AND,omitempty"`
+	OrFilter  *Filters                           `json:"$OR,omitempty"`
+}*/
 
-func (filters *Filters) AddFilter(fieldName string, operator string, value interface{}) {
-	if filters.Filter == nil {
-		m := make(map[string]map[string]interface{})
-		filters.Filter = &m
+type Filters map[string]interface{}
+
+func (filters Filters) AddFilter(fieldName string, operator string, value interface{}) {
+	if filters == nil {
+		m := make(map[string]interface{})
+		filters = m
 	}
 
 	m1 := make(map[string]interface{})
 	m1[operator] = value
 
-	(*filters.Filter)[fieldName] = m1
-}*/
+	filters[fieldName] = m1
+}
+
+func (filters Filters) AddAnd(f *[]Filters) {
+	if filters == nil {
+		m := make(map[string]interface{})
+		filters = m
+	}
+
+	filters["$AND"] = f
+}
+
+func (filters Filters) AddOr(f *[]Filters) {
+	if filters == nil {
+		m := make(map[string]interface{})
+		filters = m
+	}
+
+	filters["$OR"] = f
+}
 
 type Space struct {
 	Sites      *[]int64    `json:"s,omitempty"`
@@ -93,10 +110,23 @@ type Level2Site struct {
 }
 
 type period struct {
-	Type  string `json:"type"`
-	Start string `json:"start"`
-	End   string `json:"end"`
+	Type  Granularity `json:"type"`
+	Start string      `json:"start"`
+	End   string      `json:"end"`
 }
+
+type Granularity string
+
+const (
+	GranularityYear     Granularity = "Y"
+	GranularitySemester Granularity = "S"
+	GranularityQuarter  Granularity = "Q"
+	GranularityMonth    Granularity = "M"
+	GranularityWeek     Granularity = "W"
+	GranularityDay      Granularity = "D"
+	GranularityHour     Granularity = "H"
+	GranularityMinute   Granularity = "MN"
+)
 
 type Options struct {
 	IgnoreNullProperties bool `json:"ignore_null_properties"`
@@ -141,7 +171,7 @@ func (p *Period) AddDay(date civil.Date) {
 	}
 
 	p.periods[fmt.Sprintf("p%v", len(p.periods)+1)] = []period{period{
-		Type:  "D",
+		Type:  GranularityDay,
 		Start: date.String(),
 		End:   date.String(),
 	}}
@@ -153,7 +183,7 @@ func (p *Period) AddDateRange(startDate civil.Date, endDate civil.Date) {
 	}
 
 	p.periods[fmt.Sprintf("p%v", len(p.periods)+1)] = []period{period{
-		Type:  "D",
+		Type:  GranularityDay,
 		Start: startDate.String(),
 		End:   endDate.String(),
 	}}
@@ -214,16 +244,16 @@ type DataFeed struct {
 }
 
 type Column struct {
-	Category     string `json:"Category"`
-	Name         string `json:"Name"`
-	Type         string `json:"Type"`
-	CustomerType string `json:"CustomerType"`
-	Label        string `json:"Label"`
-	Description  string `json:"Description"`
-	Filterable   bool   `json:"Filterable"`
-	Pie          *bool  `json:"Pie"`
-	Precision    *int   `json:"Precision"`
-	Summable     *bool  `json:"Summable"`
+	Category     string                `json:"Category"`
+	Name         string                `json:"Name"`
+	Type         string                `json:"Type"`
+	CustomerType string                `json:"CustomerType"`
+	Label        string                `json:"Label"`
+	Description  string                `json:"Description"`
+	Filterable   bool                  `json:"Filterable"`
+	Pie          *bool                 `json:"Pie"`
+	Precision    *go_types.Int64String `json:"Precision"`
+	Summable     *bool                 `json:"Summable"`
 }
 
 type Column2 struct {
@@ -310,12 +340,11 @@ func (service *Service) getData2(params *GetDataParams) (*[]DataFeed, *errortool
 
 	data := Data2{}
 
-	//fmt.Println(service.url2(fmt.Sprintf("getData?%s", values.Encode())))
-
 	requestConfig := go_http.RequestConfig{
 		URL:           service.url2(fmt.Sprintf("getData?%s", values.Encode())),
 		ResponseModel: &data,
 	}
+	//fmt.Println(requestConfig.URL)
 	_, _, e := service.get(&requestConfig)
 
 	return &data.DataFeed, e
@@ -333,9 +362,9 @@ func (service *Service) getData3(params *GetDataParams) (*[]DataFeed, *errortool
 		BodyModel:     params.Params(),
 		ResponseModel: &data,
 	}
-	//fmt.Println(requestConfig.URL)
-	//b, _ := json.Marshal(requestConfig.BodyModel)
-	//fmt.Println(string(b))
+	fmt.Println(requestConfig.URL)
+	b, _ := json.Marshal(requestConfig.BodyModel)
+	fmt.Println(string(b))
 	_, _, e := service.post(&requestConfig)
 
 	return &[]DataFeed{data.DataFeed}, e
