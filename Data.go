@@ -8,7 +8,6 @@ import (
 	"cloud.google.com/go/civil"
 	errortools "github.com/leapforce-libraries/go_errortools"
 	go_http "github.com/leapforce-libraries/go_http"
-	go_types "github.com/leapforce-libraries/go_types"
 )
 
 type GetDataVersion string
@@ -243,16 +242,16 @@ type DataFeed struct {
 }
 
 type Column struct {
-	Category     string                `json:"Category"`
-	Name         string                `json:"Name"`
-	Type         string                `json:"Type"`
-	CustomerType string                `json:"CustomerType"`
-	Label        string                `json:"Label"`
-	Description  string                `json:"Description"`
-	Filterable   bool                  `json:"Filterable"`
-	Pie          *bool                 `json:"Pie"`
-	Precision    *go_types.Int64String `json:"Precision"`
-	Summable     *bool                 `json:"Summable"`
+	Category     string `json:"Category"`
+	Name         string `json:"Name"`
+	Type         string `json:"Type"`
+	CustomerType string `json:"CustomerType"`
+	Label        string `json:"Label"`
+	Description  string `json:"Description"`
+	Filterable   bool   `json:"Filterable"`
+	Pie          *bool  `json:"Pie"`
+	Precision    *int64 `json:"Precision"`
+	Summable     *bool  `json:"Summable"`
 }
 
 type Column2 struct {
