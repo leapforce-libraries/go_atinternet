@@ -1,7 +1,6 @@
 package atinternet
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
@@ -362,9 +361,9 @@ func (service *Service) getData3(params *GetDataParams) (*[]DataFeed, *errortool
 		BodyModel:     params.Params(),
 		ResponseModel: &data,
 	}
-	fmt.Println(requestConfig.URL)
-	b, _ := json.Marshal(requestConfig.BodyModel)
-	fmt.Println(string(b))
+	//fmt.Println(requestConfig.URL)
+	//b, _ := json.Marshal(requestConfig.BodyModel)
+	//fmt.Println(string(b))
 	_, _, e := service.post(&requestConfig)
 
 	return &[]DataFeed{data.DataFeed}, e
