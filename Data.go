@@ -1,6 +1,7 @@
 package atinternet
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
@@ -242,16 +243,16 @@ type DataFeed struct {
 }
 
 type Column struct {
-	Category     string `json:"Category"`
-	Name         string `json:"Name"`
-	Type         string `json:"Type"`
-	CustomerType string `json:"CustomerType"`
-	Label        string `json:"Label"`
-	Description  string `json:"Description"`
-	Filterable   bool   `json:"Filterable"`
-	Pie          *bool  `json:"Pie"`
-	Precision    *int64 `json:"Precision"`
-	Summable     *bool  `json:"Summable"`
+	Category     string          `json:"Category"`
+	Name         string          `json:"Name"`
+	Type         string          `json:"Type"`
+	CustomerType string          `json:"CustomerType"`
+	Label        string          `json:"Label"`
+	Description  string          `json:"Description"`
+	Filterable   bool            `json:"Filterable"`
+	Pie          *bool           `json:"Pie"`
+	Precision    json.RawMessage `json:"Precision"`
+	Summable     *bool           `json:"Summable"`
 }
 
 type Column2 struct {
