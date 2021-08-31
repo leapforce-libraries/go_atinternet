@@ -309,5 +309,6 @@ const (
 	P2PageChapter2 Property = "d_page_chap2"
 	P2PageChapter3 Property = "d_page_chap3"
 	P2Source       Property = "d_source"
+	P2SourceDetail Property = "d_cs_group"
 	P2TimeWeek     Property = "d_time_week"
 )
