@@ -3,6 +3,7 @@ package atinternet
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -169,7 +170,7 @@ func (p *Period) AddDay(date civil.Date) {
 		p.periods = make(map[string][]period)
 	}
 
-	p.periods[fmt.Sprintf("p%v", len(p.periods)+1)] = []period{period{
+	p.periods[fmt.Sprintf("p%v", len(p.periods)+1)] = []period{{
 		Type:  GranularityDay,
 		Start: date.String(),
 		End:   date.String(),
@@ -181,7 +182,7 @@ func (p *Period) AddDateRange(startDate civil.Date, endDate civil.Date) {
 		p.periods = make(map[string][]period)
 	}
 
-	p.periods[fmt.Sprintf("p%v", len(p.periods)+1)] = []period{period{
+	p.periods[fmt.Sprintf("p%v", len(p.periods)+1)] = []period{{
 		Type:  GranularityDay,
 		Start: startDate.String(),
 		End:   endDate.String(),
@@ -296,9 +297,7 @@ func (service *Service) getData2(params *GetDataParams) (*[]DataFeed, *errortool
 	if params.MaxResults != nil {
 		values.Set("max-results", fmt.Sprintf("%v", *params.MaxResults))
 	}
-	for _, metric := range params.Metrics.String() {
-		columns = append(columns, metric)
-	}
+	columns = append(columns, params.Metrics.String()...)
 	if params.PageNum != nil {
 		values.Set("page-num", fmt.Sprintf("%v", *params.PageNum))
 	}
@@ -309,15 +308,9 @@ func (service *Service) getData2(params *GetDataParams) (*[]DataFeed, *errortool
 		}
 		values.Set("period", fmt.Sprintf("{%s}", strings.Join(periods, ",")))
 	}
-	for _, property := range params.Properties.String() {
-		columns = append(columns, property)
-	}
+	columns = append(columns, params.Properties.String()...)
 	if params.Sort != nil {
-		sorts := []string{}
-		for _, sort := range params.Sort.sort {
-			sorts = append(sorts, sort)
-		}
-		values.Set("sort", fmt.Sprintf("{%s}", strings.Join(sorts, ",")))
+		values.Set("sort", fmt.Sprintf("{%s}", strings.Join(params.Sort.sort, ",")))
 	}
 	spaces := []string{}
 	if params.Space.Sites != nil {
@@ -340,11 +333,12 @@ func (service *Service) getData2(params *GetDataParams) (*[]DataFeed, *errortool
 	data := Data2{}
 
 	requestConfig := go_http.RequestConfig{
+		Method:        http.MethodGet,
 		URL:           service.url2(fmt.Sprintf("getData?%s", values.Encode())),
 		ResponseModel: &data,
 	}
 	//fmt.Println(requestConfig.URL)
-	_, _, e := service.get(&requestConfig)
+	_, _, e := service.httpRequest(&requestConfig)
 
 	return &data.DataFeed, e
 }
@@ -357,6 +351,7 @@ func (service *Service) getData3(params *GetDataParams) (*[]DataFeed, *errortool
 	data := Data{}
 
 	requestConfig := go_http.RequestConfig{
+		Method:        http.MethodPost,
 		URL:           service.url3("getData"),
 		BodyModel:     params.Params(),
 		ResponseModel: &data,
@@ -364,7 +359,7 @@ func (service *Service) getData3(params *GetDataParams) (*[]DataFeed, *errortool
 	//fmt.Println(requestConfig.URL)
 	//b, _ := json.Marshal(requestConfig.BodyModel)
 	//fmt.Println(string(b))
-	_, _, e := service.post(&requestConfig)
+	_, _, e := service.httpRequest(&requestConfig)
 
 	return &[]DataFeed{data.DataFeed}, e
 }
@@ -411,11 +406,12 @@ func (service *Service) GetRowCount3(params *GetRowCountParams) (*RowCounts, *er
 	rowCounts := RowCounts{}
 
 	requestConfig := go_http.RequestConfig{
+		Method:        http.MethodPost,
 		URL:           service.url3("getRowCount"),
 		BodyModel:     params.Params(),
 		ResponseModel: &rowCounts,
 	}
-	_, _, e := service.post(&requestConfig)
+	_, _, e := service.httpRequest(&requestConfig)
 
 	return &rowCounts, e
 }
@@ -441,11 +437,12 @@ func (service *Service) GetTotal3(params *GetTotalParams) (*RowCounts, *errortoo
 	rowCounts := RowCounts{}
 
 	requestConfig := go_http.RequestConfig{
+		Method:        http.MethodPost,
 		URL:           service.url3("getTotal"),
 		BodyModel:     params.Params(),
 		ResponseModel: &rowCounts,
 	}
-	_, _, e := service.post(&requestConfig)
+	_, _, e := service.httpRequest(&requestConfig)
 
 	return &rowCounts, e
 }
