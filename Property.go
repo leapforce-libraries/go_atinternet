@@ -212,6 +212,7 @@ const (
 	PProductQuantity           Property = "product_quantity"
 	PProductStock              Property = "product_stock"
 	PProductVariant            Property = "product_variant"
+	PPublicationDate           Property = "publication_date"
 	PShippingCosttaxfree       Property = "shipping_costtaxfree"
 	PShippingCosttaxincluded   Property = "shipping_costtaxincluded"
 	PShippingDelivery          Property = "shipping_delivery"
