@@ -334,10 +334,10 @@ func (service *Service) getData2(params *GetDataParams) (*[]DataFeed, *errortool
 
 	requestConfig := go_http.RequestConfig{
 		Method:        http.MethodGet,
-		URL:           service.url2(fmt.Sprintf("getData?%s", values.Encode())),
+		Url:           service.url2(fmt.Sprintf("getData?%s", values.Encode())),
 		ResponseModel: &data,
 	}
-	//fmt.Println(requestConfig.URL)
+	//fmt.Println(requestConfig.Url)
 	_, _, e := service.httpRequest(&requestConfig)
 
 	return &data.DataFeed, e
@@ -352,11 +352,11 @@ func (service *Service) getData3(params *GetDataParams) (*[]DataFeed, *errortool
 
 	requestConfig := go_http.RequestConfig{
 		Method:        http.MethodPost,
-		URL:           service.url3("getData"),
+		Url:           service.url3("getData"),
 		BodyModel:     params.Params(),
 		ResponseModel: &data,
 	}
-	//fmt.Println(requestConfig.URL)
+	//fmt.Println(requestConfig.Url)
 	//b, _ := json.Marshal(requestConfig.BodyModel)
 	//fmt.Println(string(b))
 	_, _, e := service.httpRequest(&requestConfig)
@@ -407,7 +407,7 @@ func (service *Service) GetRowCount3(params *GetRowCountParams) (*RowCounts, *er
 
 	requestConfig := go_http.RequestConfig{
 		Method:        http.MethodPost,
-		URL:           service.url3("getRowCount"),
+		Url:           service.url3("getRowCount"),
 		BodyModel:     params.Params(),
 		ResponseModel: &rowCounts,
 	}
@@ -438,7 +438,7 @@ func (service *Service) GetTotal3(params *GetTotalParams) (*RowCounts, *errortoo
 
 	requestConfig := go_http.RequestConfig{
 		Method:        http.MethodPost,
-		URL:           service.url3("getTotal"),
+		Url:           service.url3("getTotal"),
 		BodyModel:     params.Params(),
 		ResponseModel: &rowCounts,
 	}

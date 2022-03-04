@@ -62,7 +62,7 @@ func (service *Service) httpRequest(requestConfig *go_http.RequestConfig) (*http
 	errorResponse := ErrorResponse{}
 	(*requestConfig).ErrorModel = &errorResponse
 
-	request, response, e := service.httpService.HTTPRequest(requestConfig)
+	request, response, e := service.httpService.HttpRequest(requestConfig)
 	if errorResponse.ErrorMessage != "" {
 		e.SetMessage(errorResponse.ErrorMessage)
 	}
@@ -82,18 +82,18 @@ func (service *Service) url3(path string) string {
 	return fmt.Sprintf("%s/%s", apiURL3, path)
 }
 
-func (service Service) APIName() string {
+func (service Service) ApiName() string {
 	return apiName
 }
 
-func (service Service) APIKey() string {
+func (service Service) ApiKey() string {
 	return service.accessKey
 }
 
-func (service Service) APICallCount() int64 {
+func (service Service) ApiCallCount() int64 {
 	return service.httpService.RequestCount()
 }
 
-func (service Service) APIReset() {
+func (service Service) ApiReset() {
 	service.httpService.ResetRequestCount()
 }
