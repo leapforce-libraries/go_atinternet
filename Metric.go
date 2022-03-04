@@ -118,6 +118,7 @@ const (
 	MTimeSpentPerPagesLoads       Metric = "m_time_spent_per_pages_loads"
 	MTimeSpentPerPagesVisits      Metric = "m_time_spent_per_pages_visits"
 	MTimeSpentPerVisits           Metric = "m_time_spent_per_visits"
+	MTimeSpentPerVisitsLoads      Metric = "m_time_spent_per_visits_loads"
 	MVisitors                     Metric = "m_visitors"
 	MVisitorsPage                 Metric = "m_visitors_page"
 	MVisits                       Metric = "m_visits"
