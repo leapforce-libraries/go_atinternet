@@ -127,6 +127,7 @@ const (
 	PIseKeyword                Property = "ise_keyword"
 	PIsePage                   Property = "ise_page"
 	PIseResult                 Property = "ise_result"
+	PLanguage                  Property = "language"
 	PMvCreation                Property = "mv_creation"
 	PMvTest                    Property = "mv_test"
 	PMvWave                    Property = "mv_wave"
